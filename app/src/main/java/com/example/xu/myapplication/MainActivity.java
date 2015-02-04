@@ -15,9 +15,8 @@ import com.example.xu.myapplication.service.ServiceRulesException;
 import com.example.xu.myapplication.service.UserService;
 import com.example.xu.myapplication.service.UserServiceImpl;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
-
-
 public class MainActivity extends Activity {
 
     private Button btnHttp;
@@ -61,8 +60,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
+
+
         init();
     }
 

@@ -6,9 +6,12 @@ apply plugin:'Hinge'
             mavenLocal()
         }
 
-        dependencies {
-            compile 'com.llmofang.android.agent:android-agent:1.0'
-        }
+dependencies {
+    compile 'com.squareup.okhttp:okhttp:2.0.0'
+    compile 'com.squareup.okhttp:okhttp-urlconnection:2.2.0'
+    compile project(':android_agent')
+  //  compile project(':HingeGradle')
+}
         android {
             compileSdkVersion 21
             buildToolsVersion "21.1.1"
