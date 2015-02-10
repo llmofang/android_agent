@@ -10,171 +10,392 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.conn.params.ConnRouteParams;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.HttpURLConnection;
 import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 
+import javax.net.ssl.HttpsURLConnection;
+
 
   public final class HttpInstrumentation
   {
-    private static final String ORGINAL_PROXY="";
-    //private static final String PROXY="115.238.145.51";
-    private static final String PROXY="10.0.0.10";
-    //private static final  int PORT=59901;
-    private static final  int PORT=8080;
+      public static  final String REQESTTOKEN_HEADER="Llmf-Proxy-Authorization";
+      public static final int REQUESTTOKEN_EXPIRED=107;
     @ReplaceCallSite
     public static URLConnection openConnection(URL url) throws IOException {
-      Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(PROXY, PORT));
-      try {
-        return url.openConnection(proxy);
-      } catch (IOException e) {
-        e.printStackTrace();
-        throw e;
-      }
+
+
+        if(LLMoFangProxyService.whetherSetProxy())
+        {
+            Proxy proxy=null;
+            if(url.getProtocol()=="http") {
+                proxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
+                HttpURLConnection connection= null;
+                try {
+                    connection = (HttpURLConnection) url.openConnection(proxy);
+                    connection.setRequestProperty(REQESTTOKEN_HEADER,LLMoFang.requestToken);
+                    connection.connect();
+                    if(connection.getResponseCode()==200)
+                    {
+                        return connection;
+                    }else if(connection.getResponseCode()==407){
+                        String responseData=LLMoFangUtil.ConvertToString(connection.getInputStream());
+                        try {
+                            JSONObject jsonObject=new JSONObject(responseData);
+                            int code=jsonObject.getInt("code");
+                            LLMoFang.initializeService.acquireAppToken();
+                            connection.disconnect();
+                            throw new IOException();
+                        } catch (JSONException e) {
+                           return connection;
+                        }
+
+
+                    }else {
+                        return connection;
+                    }
+                } catch (IOException e) {
+                    LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                    throw new IOException();
+                }
+
+
+            }else if(url.getProtocol()=="https"){
+                proxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
+                HttpsURLConnection connection= null;
+                try {
+                    connection = (HttpsURLConnection) url.openConnection(proxy);
+                    connection.setRequestProperty(REQESTTOKEN_HEADER,LLMoFang.requestToken);
+                    connection.connect();
+                    if(connection.getResponseCode()==200)
+                    {
+                        return connection;
+                    }else if(connection.getResponseCode()==407){
+
+                        String responseData=LLMoFangUtil.ConvertToString(connection.getInputStream());
+                        try {
+                            JSONObject jsonObject=new JSONObject(responseData);
+                            int code=jsonObject.getInt("code");
+                            LLMoFang.initializeService.acquireAppToken();
+                            connection.disconnect();
+                            throw new IOException();
+                        } catch (JSONException e) {
+                            return connection;
+                        }
+
+
+                    }else {
+                        return connection;
+                    }
+                }catch (IOException e) {
+                   LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                    throw  new IOException();
+                }
+
+
+            }else {
+                return url.openConnection();
+            }
+
+
+        }else {
+            return url.openConnection();
+        }
     }
 
     @ReplaceCallSite
     public static URLConnection openConnectionWithProxy(URL url,Proxy proxy) throws IOException {
-      Proxy newproxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(PROXY, PORT));
-      try {
-        return url.openConnection(newproxy);
-      } catch (IOException e) {
-        e.printStackTrace();
-        throw e;
-      }
+
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            Proxy newproxy = null;
+
+            if (url.getProtocol() == "http") {
+                newproxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
+                try {
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection(proxy);
+                    connection.setRequestProperty("X-LLMoFang-OrginalProxy", proxy.toString());
+                    connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
+                    connection.connect();
+                    if (connection.getResponseCode() == 200) {
+                        return connection;
+                    }else if(connection.getResponseCode()==407){
+
+                        String responseData=LLMoFangUtil.ConvertToString(connection.getInputStream());
+                        try {
+                            JSONObject jsonObject=new JSONObject(responseData);
+                            int code=jsonObject.getInt("code");
+                            LLMoFang.initializeService.acquireAppToken();
+                            connection.disconnect();
+                            throw new IOException();
+                        } catch (JSONException e) {
+                            return connection;
+                        }
+
+
+                    }else {
+                        return connection;
+                    }
+                } catch (IOException e) {
+                    LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                    throw new IOException();
+                }
+
+            } else if (url.getProtocol() == "https") {
+                try {
+                    newproxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
+                    HttpsURLConnection connection = (HttpsURLConnection) url.openConnection(proxy);
+                    connection.setRequestProperty("X-LLMoFang-OrginalProxy", proxy.toString());
+                    connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
+                    connection.connect();
+                    if (connection.getResponseCode() == 200) {
+                        return connection;
+                    } else if(connection.getResponseCode()==407){
+
+                        String responseData=LLMoFangUtil.ConvertToString(connection.getInputStream());
+                        try {
+                            JSONObject jsonObject=new JSONObject(responseData);
+                            int code=jsonObject.getInt("code");
+                            LLMoFang.initializeService.acquireAppToken();
+                            connection.disconnect();
+                            throw new IOException();
+                        } catch (JSONException e) {
+                            return connection;
+                        }
+
+
+                    }else {
+                        return connection;
+                    }
+                } catch (IOException e) {
+
+                    LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                    throw new IOException();
+                }
+
+
+            }else {
+                return url.openConnection();
+            }
+        }else {
+            return url.openConnection();
+        }
     }
 
     @ReplaceCallSite
-    public static HttpResponse execute(HttpClient httpClient, HttpHost target, HttpRequest request, HttpContext context)
-      throws IOException
+    public static HttpResponse execute(HttpClient httpClient, HttpHost target, HttpRequest request, HttpContext context) throws IOException
+
     {
-      HttpHost proxy = new HttpHost(PROXY, PORT);
-      httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
-
-      try{
-        return  httpClient.execute(target,request,context);
-      }catch (ClientProtocolException e) {
-        throw e;
-      }
-      catch (IOException e) {
-        throw e;
-      }
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            try{
+                setOriginProxy(target, request);
+                LLMoFangProxyService.httpclientSetProxy(httpClient);
+                HttpResponse response=httpClient.execute(target,request,context);
+                return responseHandler(response);
+            }catch (IOException e )
+            {
+                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                throw new IOException();
+            }
+        }else {
+            return  httpClient.execute(target,request,context);
+        }
     }
 
-    @ReplaceCallSite
+
+
+
+      @ReplaceCallSite
     public static <T> T execute(HttpClient httpClient, HttpHost target, HttpRequest request, ResponseHandler<? extends T> responseHandler, HttpContext context)
       throws IOException, ClientProtocolException
     {
-      HttpHost proxy = new HttpHost(PROXY, PORT);
-      httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            try{
+            setOriginProxy(target, request);
+            LLMoFangProxyService.httpclientSetProxy(httpClient);
+            HttpResponse response=httpClient.execute(target,request,context);
 
-      try{
+            return responseHandler.handleResponse(responseHandler(response));
+        }catch (Exception e )
+        {
+            LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+            throw new IOException();
+        }
+        }else{
+
         return  httpClient.execute(target,request,responseHandler,context);
-      }catch (ClientProtocolException e) {
-        throw e;
-      }
-      catch (IOException e) {
-        throw e;
-      }
+        }
     }
 
     @ReplaceCallSite()
     public static <T> T execute(HttpClient httpClient, HttpHost target, HttpRequest request, ResponseHandler<? extends T> responseHandler) throws Exception {
-      HttpHost proxy = new HttpHost(PROXY, PORT);
-      httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            try{
+                setOriginProxy(target, request);
+                LLMoFangProxyService.httpclientSetProxy(httpClient);
+                HttpResponse response=httpClient.execute(target,request);
 
-      try{
-        return  httpClient.execute(target,request,responseHandler);
-      }catch (ClientProtocolException e) {
-        throw e;
-      }
-      catch (IOException e) {
-        throw e;
-      }
+                return responseHandler.handleResponse(responseHandler(response));
+            }catch (Exception e )
+            {
+                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                throw new IOException();
+            }
+        }else{
+
+            return  httpClient.execute(target,request,responseHandler);
+        }
     }
 
     @ReplaceCallSite
     public static HttpResponse execute(HttpClient httpClient, HttpHost target, HttpRequest request) throws IOException
     {
-      HttpHost proxy = new HttpHost(PROXY, PORT);
-      httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
-      try{
-        return  httpClient.execute(target, request);
-      }catch (ClientProtocolException e) {
-        throw e;
-      }
-      catch (IOException e) {
-        throw e;
-      }
+
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            try{
+                setOriginProxy(target, request);
+                LLMoFangProxyService.httpclientSetProxy(httpClient);
+                HttpResponse response=httpClient.execute(target,request);
+
+                return responseHandler(response);
+            }catch (Exception e )
+            {
+                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                throw new IOException();
+            }
+        }else{
+
+            return  httpClient.execute(target,request);
+        }
+
     }
 
     @ReplaceCallSite
     public static HttpResponse execute(HttpClient httpClient, HttpUriRequest request, HttpContext context) throws IOException
     {
-      HttpHost proxy = new HttpHost(PROXY, PORT);
-      httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
-      try{
-        return  httpClient.execute(request, context);
-      }catch (ClientProtocolException e) {
-        throw e;
-      }
-      catch (IOException e) {
-        throw e;
-      }
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            try{
+                setOriginProxy(httpClient, request);
+                LLMoFangProxyService.httpclientSetProxy(httpClient);
+                HttpResponse response=httpClient.execute(request,context);
+
+                return responseHandler(response);
+            }catch (Exception e )
+            {
+                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                throw new IOException();
+            }
+        }else{
+
+            return  httpClient.execute(request,context);
+        }
     }
 
     @ReplaceCallSite
     public static <T> T execute(HttpClient httpClient, HttpUriRequest request, ResponseHandler<? extends T> responseHandler, HttpContext context)
       throws IOException, ClientProtocolException
     {
-      HttpHost proxy = new HttpHost(PROXY, PORT);
-      httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
-      try{
-        return  httpClient.execute(request,responseHandler,context);
-      }catch (ClientProtocolException e) {
-        throw e;
-      }
-      catch (IOException e) {
-        throw e;
-      }
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            try{
+                setOriginProxy(httpClient, request);
+                LLMoFangProxyService.httpclientSetProxy(httpClient);
+                HttpResponse response=httpClient.execute(request,context);
+
+                return responseHandler.handleResponse(responseHandler(response));
+            }catch (Exception e )
+            {
+                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                throw new IOException();
+            }
+        }else{
+
+            return  httpClient.execute(request,responseHandler,context);
+        }
+
     }
 
     @ReplaceCallSite
     public static <T> T execute(HttpClient httpClient, HttpUriRequest request, ResponseHandler<? extends T> responseHandler)
       throws IOException, ClientProtocolException
     {
-      HttpHost proxy = new HttpHost(PROXY, PORT);
-      httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
-      try {
-        return httpClient.execute(request,responseHandler);
-      }
-      catch (ClientProtocolException e) {
-        throw e;
-      }
-      catch (IOException e) {
-        throw e;
-      }
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            try{
+                setOriginProxy(httpClient, request);
+                LLMoFangProxyService.httpclientSetProxy(httpClient);
+                HttpResponse response=httpClient.execute(request);
+
+                return responseHandler.handleResponse(responseHandler(response));
+            }catch (Exception e )
+            {
+                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                throw new IOException();
+            }
+        }else{
+
+            return  httpClient.execute(request,responseHandler);
+        }
     }
 
     @ReplaceCallSite
     public static HttpResponse execute(HttpClient httpClient, HttpUriRequest request) throws IOException {
-      HttpHost proxy = new HttpHost(PROXY, PORT);
-      httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
-      try {
-        return httpClient.execute(request);
-      }
-      catch (ClientProtocolException e) {
-        throw e;
-      }
-      catch (IOException e) {
-        throw e;
-      }
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            try{
+                setOriginProxy(httpClient, request);
+                LLMoFangProxyService.httpclientSetProxy(httpClient);
+                HttpResponse response=httpClient.execute(request);
+
+                return responseHandler(response);
+            }catch (Exception e )
+            {
+                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                throw new IOException();
+            }
+        }else{
+
+            return  httpClient.execute(request);
+        }
     }
+
+      private static void setOriginProxy(HttpClient httpClient, HttpRequest request) {
+          HttpHost host= (HttpHost) httpClient.getParams().getParameter("http.route.default-proxy");
+          if(host!=null) {
+              request.addHeader("X-LLMoFang-OrginalProxy", host.toString());
+          }
+      }
+
+      private static void setOriginProxy(HttpHost host,HttpRequest request)
+      {
+          if(host!=null) {
+              request.addHeader("X-LLMoFang-OrginalProxy", host.toString());
+          }
+      }
+
+      private static HttpResponse responseHandler(HttpResponse response) throws IOException {
+          if(response.getStatusLine().getStatusCode()==200){
+              return response;
+          }else if(response.getStatusLine().getStatusCode()==407){
+              try {
+                  String responseData = EntityUtils.toString(response.getEntity());
+                  JSONObject responseJson = new JSONObject(responseData);
+                  int code = responseJson.getInt("code");
+                  LLMoFang.initializeService.acquireAppToken();
+                  throw new IOException();
+              }
+              catch (JSONException jsonexception){
+                  return response;
+              }
+
+
+          }else {
+              return response;
+          }
+      }
 
   }
 

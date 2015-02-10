@@ -1,5 +1,9 @@
 package com.llmofang.android.agent;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.security.MessageDigest;
@@ -56,6 +60,28 @@ public class LLMoFangUtil {
         }else{
             return true;
         }
+    }
+    public static String ConvertToString(InputStream inputStream){
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+        StringBuilder result = new StringBuilder();
+        String line = null;
+        try {
+            while(!(line = bufferedReader.readLine()).equals("")){
+                result.append(line + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try{
+                inputStreamReader.close();
+                inputStream.close();
+                bufferedReader.close();
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+        return result.toString();
     }
 
 }
