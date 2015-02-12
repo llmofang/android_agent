@@ -2,6 +2,7 @@ package com.llmofang.android.agent;
 
 import android.util.Base64;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -29,10 +30,10 @@ public class InitializeService implements Runnable{
 
     @Override
     public void run() {
+
             acquireAppToken();
             acquireInitData();
          LLMoFang.scheduledThreadPoolExecutor.scheduleAtFixedRate(new SyncFlowTask(),LLMoFang.syncFlowSchedule,LLMoFang.syncFlowSchedule, TimeUnit.SECONDS);
-
     }
 
     public  void acquireAppToken()  {
@@ -44,6 +45,7 @@ public class InitializeService implements Runnable{
 
         Response response = null;
         try {
+            client.setConnectTimeout(10,TimeUnit.SECONDS);
             response = client.newCall(request).execute();
             if(response.code()==200)
             {
@@ -56,6 +58,7 @@ public class InitializeService implements Runnable{
             }
         } catch (IOException e) {
             Log.i(LLMoFang.TAG,"acquireAppToken error network error"+e.getMessage());
+           // Toast.makeText(LLMoFang.applicationContext,"流量魔方初始化失败",Toast.LENGTH_SHORT);
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ControlCenterRetryTask(),LLMoFang.controlCenterRetrySchedule,TimeUnit.SECONDS);
             e.printStackTrace();
         } catch (JSONException e) {
@@ -96,9 +99,13 @@ public class InitializeService implements Runnable{
                 LLMoFang.errorRetry=errorPolicy.getInt("retry");
                 LLMoFang.errorInterval=errorPolicy.getInt("interval");
 
-                JSONObject connectPolicy=result.getJSONObject("network_policy");
-                LLMoFang.connectCellular=connectPolicy.getBoolean("cellular");
-                LLMoFang.connectWifi=connectPolicy.getBoolean("wifi");
+
+                JSONObject networkPolicy=result.getJSONObject("network_policy");
+                LLMoFang.connectCellular=networkPolicy.getBoolean("cellular");
+                LLMoFang.connectWifi=networkPolicy.getBoolean("wifi");
+
+                JSONObject connectPolicy=result.getJSONObject("connect_policy");
+                LLMoFang.syncFlowSchedule=connectPolicy.getInt("update");
                 LLMoFang.isllmofangInitialized=true;
                 Log.i("[llmofang]", response_body);
 

@@ -1,6 +1,7 @@
 package com.llmofang.android.agent;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -61,27 +62,28 @@ public class LLMoFangUtil {
             return true;
         }
     }
-    public static String ConvertToString(InputStream inputStream){
-        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-        StringBuilder result = new StringBuilder();
-        String line = null;
+    public static String ConvertToString(InputStream is){
+        ByteArrayOutputStream baos   =   new   ByteArrayOutputStream();
+        int   i=-1;
         try {
-            while(!(line = bufferedReader.readLine()).equals("")){
-                result.append(line + "\n");
+            while((i=is.read())!=-1){
+                baos.write(i);
+
             }
+            return   baos.toString();
         } catch (IOException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
-        } finally {
-            try{
-                inputStreamReader.close();
-                inputStream.close();
-                bufferedReader.close();
-            }catch(IOException e){
+        } finally{
+            try {
+                is.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
-        return result.toString();
+
+        return "";
     }
 
 }

@@ -2,6 +2,7 @@ package com.llmofang.android.agent;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.util.Log;
 
 import org.apache.http.HttpHost;
 import org.apache.http.client.HttpClient;
@@ -31,21 +32,27 @@ public class LLMoFangProxyService {
         if(LLMoFang.errorRetry<=0)
         {
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ProxyRetryTask(),LLMoFang.errorInterval, TimeUnit.SECONDS);
+            Log.d(LLMoFang.TAG,"proxy_error_retry_task running.............");
             whetherSetProxy=false;
         }
-        if(LLMoFang.connectivityAction== ConnectivityManager.TYPE_WIFI)
+        if (LLMoFang.connectivityAction!=-1)
         {
-            if(LLMoFang.connectWifi==false)
+            if(LLMoFang.connectivityAction== ConnectivityManager.TYPE_WIFI)
             {
-                whetherSetProxy=false;
+                if(LLMoFang.connectWifi==false)
+                {
+                    whetherSetProxy=false;
+                }
             }
-        }
-        if(LLMoFang.connectivityAction== ConnectivityManager.TYPE_MOBILE)
-        {
-            if(LLMoFang.connectCellular ==false)
+            if(LLMoFang.connectivityAction== ConnectivityManager.TYPE_MOBILE)
             {
-                whetherSetProxy=false;
+                if(LLMoFang.connectCellular ==false)
+                {
+                    whetherSetProxy=false;
+                }
             }
+        }else {
+            whetherSetProxy=false;
         }
         if(LLMoFang.connectivityAction== NetWorkListener.NONETWORK)
         {

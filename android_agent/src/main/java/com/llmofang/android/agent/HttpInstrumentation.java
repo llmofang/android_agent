@@ -28,58 +28,23 @@ import javax.net.ssl.HttpsURLConnection;
   {
       public static  final String REQESTTOKEN_HEADER="Llmf-Proxy-Authorization";
       public static final int REQUESTTOKEN_EXPIRED=107;
+      public static  final  String PROXYERRORMSG="HTTP/1.1 407 ProxyAuthRequired";
     @ReplaceCallSite
     public static URLConnection openConnection(URL url) throws IOException {
 
 
-        if(LLMoFangProxyService.whetherSetProxy())
-        {
-            Proxy proxy=null;
-            if(url.getProtocol()=="http") {
+        if(LLMoFangProxyService.whetherSetProxy()) {
+            Proxy proxy = null;
+            if (url.getProtocol().equals("http")) {
                 proxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
-                HttpURLConnection connection= null;
+                HttpURLConnection connection = null;
                 try {
                     connection = (HttpURLConnection) url.openConnection(proxy);
-                    connection.setRequestProperty(REQESTTOKEN_HEADER,LLMoFang.requestToken);
+                    connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                     connection.connect();
-                    if(connection.getResponseCode()==200)
+                    if(connection.getResponseCode()==401)
                     {
-                        return connection;
-                    }else if(connection.getResponseCode()==407){
-                        String responseData=LLMoFangUtil.ConvertToString(connection.getInputStream());
-                        try {
-                            JSONObject jsonObject=new JSONObject(responseData);
-                            int code=jsonObject.getInt("code");
-                            LLMoFang.initializeService.acquireAppToken();
-                            connection.disconnect();
-                            throw new IOException();
-                        } catch (JSONException e) {
-                           return connection;
-                        }
-
-
-                    }else {
-                        return connection;
-                    }
-                } catch (IOException e) {
-                    LLMoFang.errorRetry=LLMoFang.errorRetry-1;
-                    throw new IOException();
-                }
-
-
-            }else if(url.getProtocol()=="https"){
-                proxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
-                HttpsURLConnection connection= null;
-                try {
-                    connection = (HttpsURLConnection) url.openConnection(proxy);
-                    connection.setRequestProperty(REQESTTOKEN_HEADER,LLMoFang.requestToken);
-                    connection.connect();
-                    if(connection.getResponseCode()==200)
-                    {
-                        return connection;
-                    }else if(connection.getResponseCode()==407){
-
-                        String responseData=LLMoFangUtil.ConvertToString(connection.getInputStream());
+                        String responseData=LLMoFangUtil.ConvertToString(connection.getErrorStream());
                         try {
                             JSONObject jsonObject=new JSONObject(responseData);
                             int code=jsonObject.getInt("code");
@@ -89,17 +54,35 @@ import javax.net.ssl.HttpsURLConnection;
                         } catch (JSONException e) {
                             return connection;
                         }
-
-
                     }else {
-                        return connection;
+                         return connection;
                     }
-                }catch (IOException e) {
-                   LLMoFang.errorRetry=LLMoFang.errorRetry-1;
-                    throw  new IOException();
                 }
-
-
+            catch(IOException e){
+                if (e.getMessage().equals(PROXYERRORMSG)) {
+                    LLMoFang.initializeService.acquireAppToken();
+                }else {
+                    LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+                }
+                throw new IOException();
+            }
+        }
+            else if(url.getProtocol().equals("https")){
+                proxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
+                HttpsURLConnection connection= null;
+                try {
+                    connection = (HttpsURLConnection) url.openConnection(proxy);
+                    connection.setRequestProperty(REQESTTOKEN_HEADER,LLMoFang.requestToken);
+                    connection.connect();
+                    return  connection;
+                }catch (IOException e) {
+                    if (e.getMessage() .equals(PROXYERRORMSG)) {
+                        LLMoFang.initializeService.acquireAppToken();
+                    }else {
+                        LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+                    }
+                    throw new IOException();
+                }
             }else {
                 return url.openConnection();
             }
@@ -108,6 +91,7 @@ import javax.net.ssl.HttpsURLConnection;
         }else {
             return url.openConnection();
         }
+
     }
 
     @ReplaceCallSite
@@ -116,18 +100,16 @@ import javax.net.ssl.HttpsURLConnection;
         if(LLMoFangProxyService.whetherSetProxy()) {
             Proxy newproxy = null;
 
-            if (url.getProtocol() == "http") {
+            if (url.getProtocol().equals("http")) {
                 newproxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
                 try {
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection(proxy);
                     connection.setRequestProperty("X-LLMoFang-OrginalProxy", proxy.toString());
                     connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                     connection.connect();
-                    if (connection.getResponseCode() == 200) {
-                        return connection;
-                    }else if(connection.getResponseCode()==407){
-
-                        String responseData=LLMoFangUtil.ConvertToString(connection.getInputStream());
+                    if(connection.getResponseCode()==401)
+                    {
+                        String responseData=LLMoFangUtil.ConvertToString(connection.getErrorStream());
                         try {
                             JSONObject jsonObject=new JSONObject(responseData);
                             int code=jsonObject.getInt("code");
@@ -137,48 +119,34 @@ import javax.net.ssl.HttpsURLConnection;
                         } catch (JSONException e) {
                             return connection;
                         }
-
-
                     }else {
                         return connection;
                     }
                 } catch (IOException e) {
-                    LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                    if (e.getMessage().equals(PROXYERRORMSG)) {
+                        LLMoFang.initializeService.acquireAppToken();
+                    }else {
+                        LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+                    }
                     throw new IOException();
                 }
 
-            } else if (url.getProtocol() == "https") {
+            } else if (url.getProtocol().equals("https")) {
                 try {
                     newproxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
                     HttpsURLConnection connection = (HttpsURLConnection) url.openConnection(proxy);
                     connection.setRequestProperty("X-LLMoFang-OrginalProxy", proxy.toString());
                     connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                     connection.connect();
-                    if (connection.getResponseCode() == 200) {
-                        return connection;
-                    } else if(connection.getResponseCode()==407){
-
-                        String responseData=LLMoFangUtil.ConvertToString(connection.getInputStream());
-                        try {
-                            JSONObject jsonObject=new JSONObject(responseData);
-                            int code=jsonObject.getInt("code");
-                            LLMoFang.initializeService.acquireAppToken();
-                            connection.disconnect();
-                            throw new IOException();
-                        } catch (JSONException e) {
-                            return connection;
-                        }
-
-
-                    }else {
-                        return connection;
-                    }
+                     return connection;
                 } catch (IOException e) {
-
-                    LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                    if (e.getMessage().equals(PROXYERRORMSG)) {
+                        LLMoFang.initializeService.acquireAppToken();
+                    }else {
+                        LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+                    }
                     throw new IOException();
                 }
-
 
             }else {
                 return url.openConnection();
@@ -377,9 +345,7 @@ import javax.net.ssl.HttpsURLConnection;
       }
 
       private static HttpResponse responseHandler(HttpResponse response) throws IOException {
-          if(response.getStatusLine().getStatusCode()==200){
-              return response;
-          }else if(response.getStatusLine().getStatusCode()==407){
+         if(response.getStatusLine().getStatusCode()==401){
               try {
                   String responseData = EntityUtils.toString(response.getEntity());
                   JSONObject responseJson = new JSONObject(responseData);

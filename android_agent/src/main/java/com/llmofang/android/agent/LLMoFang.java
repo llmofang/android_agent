@@ -32,7 +32,7 @@ public class LLMoFang {
     private static String appid;
     private static String appkey;
     public static String apptoken;
-    public static int connectivityAction;
+    public static int connectivityAction=-1;
     public static long apptokenExpire;
     public static Context applicationContext;
     public static String requestToken;
@@ -56,7 +56,7 @@ public class LLMoFang {
     public static ScheduledThreadPoolExecutor scheduledThreadPoolExecutor=new ScheduledThreadPoolExecutor(1);
     public static final String CONTROLCENTERSERVER="http://10.1.1.100:4399";
     public static final String CONTROLCENTERSERVER_APPTOKENURL=CONTROLCENTERSERVER+"/app/token";
-    public static final String CONTROLCENTERSERVER_INITURL=CONTROLCENTERSERVER+"/app/runtime";
+    public static final String CONTROLCENTERSERVER_INITURL=CONTROLCENTERSERVER+"/app/runtime/";
     public static final String CONTROLCENTERSERVER_SYNCFLOW=CONTROLCENTERSERVER+"/flow/available";
     public static final String HEALTHCHECK=CONTROLCENTERSERVER+"/server/healthcheck/";
     public static  InitializeService initializeService;
@@ -79,7 +79,9 @@ public class LLMoFang {
         appkey=appKey;
         ConnectivityManager connectMgr = (ConnectivityManager) context.getSystemService(context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectMgr.getActiveNetworkInfo();
-        connectivityAction =info.getType();
+        if(info!=null) {
+            connectivityAction = info.getType();
+        }
         Log.i(TAG,"phoneNumber:"+phoneNumber+"||imie:"+imei+"||imsi:"+imsi);
         if(imsi != null || imsi.length() > 0) {
              initializeService = new InitializeService(appid, appkey);
