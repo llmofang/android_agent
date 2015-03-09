@@ -33,7 +33,7 @@ public class InitializeService implements Runnable{
 
             acquireAppToken();
             acquireInitData();
-         LLMoFang.scheduledThreadPoolExecutor.scheduleAtFixedRate(new SyncFlowTask(),LLMoFang.syncFlowSchedule,LLMoFang.syncFlowSchedule, TimeUnit.SECONDS);
+            LLMoFang.scheduledThreadPoolExecutor.scheduleAtFixedRate(new SyncFlowTask(),LLMoFang.syncFlowSchedule,LLMoFang.syncFlowSchedule, TimeUnit.SECONDS);
     }
 
     public  void acquireAppToken()  {
@@ -55,6 +55,8 @@ public class InitializeService implements Runnable{
                 LLMoFang.apptokenExpire=LLMoFangUtil.getExpireTime(result.get("expire").toString());
                 Log.i("[llmofang]",response_body );
 
+            }else{
+                LLMoFang.scheduledThreadPoolExecutor.schedule(new ControlCenterRetryTask(),LLMoFang.controlCenterRetrySchedule,TimeUnit.SECONDS);
             }
         } catch (IOException e) {
             Log.i(LLMoFang.TAG,"acquireAppToken error network error"+e.getMessage());

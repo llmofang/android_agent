@@ -29,6 +29,7 @@ import javax.net.ssl.HttpsURLConnection;
       public static  final String REQESTTOKEN_HEADER="Llmf-Proxy-Authorization";
       public static final int REQUESTTOKEN_EXPIRED=107;
       public static  final  String PROXYERRORMSG="HTTP/1.1 407 ProxyAuthRequired";
+      public static  final  String OKHTTPPROXYERRORMSG="Unexpected response code for CONNECT: 401";
     @ReplaceCallSite
     public static URLConnection openConnection(URL url) throws IOException {
 

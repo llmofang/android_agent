@@ -46,7 +46,7 @@ public class LLMoFang {
     public static boolean connectWifi;
     public static int llmofangStatus;
     public static long flow;
-    public static long syncFlowSchedule;
+    public static long syncFlowSchedule=3000;
     public static int controlCenterRetrySchedule=600;
     public static boolean isllmofangInitialized=false;
     public static final String INTERFACE_VERSION="1.0.0";
@@ -116,5 +116,10 @@ public class LLMoFang {
 
     public static String getAppkey() {
         return appkey;
+    }
+
+    public static String getVersion()
+    {
+        return SDK_VERSION;
     }
 }

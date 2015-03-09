@@ -13,10 +13,10 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class LLMoFangUtil {
-    public static Proxy getProxy() {
-        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("10.0.0.100", 8080));
-        return proxy;
-    }
+//    public static Proxy getProxy() {
+//        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("10.0.0.100", 8080));
+//        return proxy;
+//    }
 
     public static String Md5(String encodeDate) {
         try {
