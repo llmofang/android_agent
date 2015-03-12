@@ -32,67 +32,78 @@ import javax.net.ssl.HttpsURLConnection;
       public static  final  String OKHTTPPROXYERRORMSG="Unexpected response code for CONNECT: 401";
     @ReplaceCallSite
     public static URLConnection openConnection(URL url) throws IOException {
-
-
         if(LLMoFangProxyService.whetherSetProxy()) {
             Proxy proxy = null;
             if (url.getProtocol().equals("http")) {
                 proxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
-                HttpURLConnection connection = null;
-                try {
-                    connection = (HttpURLConnection) url.openConnection(proxy);
-                    connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
-                    connection.connect();
-                    if(connection.getResponseCode()==401)
-                    {
-                        String responseData=LLMoFangUtil.ConvertToString(connection.getErrorStream());
-                        try {
-                            JSONObject jsonObject=new JSONObject(responseData);
-                            int code=jsonObject.getInt("code");
-                            LLMoFang.initializeService.acquireAppToken();
-                            connection.disconnect();
-                            throw new IOException();
-                        } catch (JSONException e) {
-                            return connection;
-                        }
-                    }else {
-                         return connection;
-                    }
-                }
-            catch(IOException e){
-                if (e.getMessage().equals(PROXYERRORMSG)) {
-                    LLMoFang.initializeService.acquireAppToken();
-                }else {
-                    LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
-                }
-                throw new IOException();
-            }
-        }
-            else if(url.getProtocol().equals("https")){
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection(proxy);
+                connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
+                return  connection;
+            } else if (url.getProtocol().equals("https")) {
                 proxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
-                HttpsURLConnection connection= null;
-                try {
-                    connection = (HttpsURLConnection) url.openConnection(proxy);
-                    connection.setRequestProperty(REQESTTOKEN_HEADER,LLMoFang.requestToken);
-                    connection.connect();
-                    return  connection;
-                }catch (IOException e) {
-                    if (e.getMessage() .equals(PROXYERRORMSG)) {
-                        LLMoFang.initializeService.acquireAppToken();
-                    }else {
-                        LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
-                    }
-                    throw new IOException();
-                }
-            }else {
+                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection(proxy);
+                connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
+                return  connection;
+
+            } else {
                 return url.openConnection();
             }
-
-
         }else {
             return url.openConnection();
         }
 
+    }
+      @ReplaceCallSite
+      public static void connect(HttpsURLConnection connection) throws IOException {
+          try {
+              connection.connect();
+              if (connection.getResponseCode() == 401) {
+                  String responseData = LLMoFangUtil.ConvertToString(connection.getErrorStream());
+                  try {
+                      JSONObject jsonObject = new JSONObject(responseData);
+                      int code = jsonObject.getInt("code");
+                      LLMoFang.initializeService.acquireAppToken();
+                      connection.disconnect();
+                      throw new IOException();
+                  } catch (JSONException e) {
+                  }
+              }
+          }catch(IOException e){
+                  if (e.getMessage().equals(PROXYERRORMSG)) {
+                      LLMoFang.initializeService.acquireAppToken();
+                  } else {
+                      LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+                  }
+                  throw new IOException();
+              }
+          }
+
+      @ReplaceCallSite
+      public static void connect(HttpURLConnection connection) throws IOException {
+          try {
+            connection.connect();
+          }catch (IOException e) {
+              if (e.getMessage() .equals(PROXYERRORMSG)) {
+                  LLMoFang.initializeService.acquireAppToken();
+              }else {
+                  LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+              }
+              throw new IOException();
+          }
+
+      }
+
+    @ReplaceCallSite
+    public static void connect(URLConnection connection) throws IOException {
+        if(connection instanceof  HttpURLConnection)
+        {
+
+            if (connection instanceof  HttpsURLConnection) {
+                connect((HttpsURLConnection)connection);
+            }else {
+                connect((HttpURLConnection)connection);
+            }
+        }
     }
 
     @ReplaceCallSite

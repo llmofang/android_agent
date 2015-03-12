@@ -1,5 +1,8 @@
 package com.llmofang.android.agent;
 
+import android.os.Looper;
+import android.widget.Toast;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -84,6 +87,13 @@ public class LLMoFangUtil {
         }
 
         return "";
+    }
+
+
+    public static void showToast(String msg){
+        Looper.prepare();
+        Toast.makeText(LLMoFang.applicationContext, msg, Toast.LENGTH_SHORT).show();
+        Looper.loop();
     }
 
 }

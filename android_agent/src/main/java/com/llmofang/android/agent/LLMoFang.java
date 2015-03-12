@@ -87,7 +87,7 @@ public class LLMoFang {
              initializeService = new InitializeService(appid, appkey);
             new Thread(initializeService).start();
         }else{
-            Toast.makeText(context,"[llmofang] 无法取得用户信息初始化失败",Toast.LENGTH_SHORT);
+            LLMoFangUtil.showToast("无法取得用户信息初始化失败,流量魔方启动失败");
         }
 
     }

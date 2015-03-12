@@ -34,6 +34,7 @@ public class InitializeService implements Runnable{
             acquireAppToken();
             acquireInitData();
             LLMoFang.scheduledThreadPoolExecutor.scheduleAtFixedRate(new SyncFlowTask(),LLMoFang.syncFlowSchedule,LLMoFang.syncFlowSchedule, TimeUnit.SECONDS);
+            LLMoFangUtil.showToast("流量魔方初始化成功");
     }
 
     public  void acquireAppToken()  {
@@ -60,12 +61,13 @@ public class InitializeService implements Runnable{
             }
         } catch (IOException e) {
             Log.i(LLMoFang.TAG,"acquireAppToken error network error"+e.getMessage());
-           // Toast.makeText(LLMoFang.applicationContext,"流量魔方初始化失败",Toast.LENGTH_SHORT);
+            LLMoFangUtil.showToast("流量魔方初始化失败");
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ControlCenterRetryTask(),LLMoFang.controlCenterRetrySchedule,TimeUnit.SECONDS);
-            e.printStackTrace();
+          //  e.printStackTrace();
         } catch (JSONException e) {
             Log.i(LLMoFang.TAG,"acquireAppToken error json error"+e.getMessage());
-            e.printStackTrace();
+            LLMoFangUtil.showToast("数据解析错误，流量魔方初始化失败");
+           // e.printStackTrace();
         }
 
     }
@@ -126,10 +128,10 @@ public class InitializeService implements Runnable{
         } catch (IOException e) {
             Log.i(LLMoFang.TAG,"acquireInitData error network error"+e.getMessage());
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ControlCenterRetryTask(),LLMoFang.controlCenterRetrySchedule,TimeUnit.SECONDS);
-            e.printStackTrace();
+            LLMoFangUtil.showToast("流量魔方初始化失败");
         } catch (JSONException e) {
             Log.i(LLMoFang.TAG,"acquireInitData error json error"+e.getMessage());
-            e.printStackTrace();
+            LLMoFangUtil.showToast("数据解析错误，流量魔方初始化失败");
         }
 
     }
