@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Created by xu on 2015/2/4.
  */
 public class LLMoFangProxyService {
+    public static  Boolean whetherSetProxy=true;
     public static Proxy getProxy(ProxyURL proxyUrl)
     {
         if(proxyUrl != null)
@@ -28,7 +29,6 @@ public class LLMoFangProxyService {
 
     public static boolean whetherSetProxy()
     {
-         Boolean whetherSetProxy=true;
         if(LLMoFang.errorRetry<=0)
         {
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ProxyRetryTask(),LLMoFang.errorInterval, TimeUnit.SECONDS);

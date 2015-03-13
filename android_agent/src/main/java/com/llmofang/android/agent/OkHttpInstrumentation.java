@@ -3,6 +3,7 @@
  
 
 import com.squareup.okhttp.Call;
+import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.OkUrlFactory;
 import com.squareup.okhttp.Request;
@@ -39,50 +40,52 @@ import java.net.URL;
 //    }
 
 
-    public static HttpURLConnection open_2 (OkUrlFactory factory,URL url)throws IOException
-    {
-        OkHttpClient client = factory.client();
-        HttpURLConnection connection;
-        if(LLMoFangProxyService.whetherSetProxy()) {
-            try{
-                client.setProxy(LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl));
-                connection = new OkUrlFactory(client).open(url);
-                if(connection.getResponseCode()==401)
-                {
-                    String responseData=LLMoFangUtil.ConvertToString(connection.getErrorStream());
-                    try {
-                        JSONObject jsonObject=new JSONObject(responseData);
-                        int code=jsonObject.getInt("code");
-                        LLMoFang.initializeService.acquireAppToken();
-                        connection.disconnect();
-                        throw new IOException();
-                    } catch (JSONException e) {
-                        return connection;
-                    }
-                }else {
-                    return connection;
-                }
-            }
-            catch (Exception e){
-                if (e.getMessage().equals(HttpInstrumentation.PROXYERRORMSG)) {
-                    LLMoFang.initializeService.acquireAppToken();
-                }else {
-                    LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
-                }
-                throw new IOException();
-            }
-        }else {
-            connection = new OkUrlFactory(client).open(url);
-
-        }
-      return connection;
-    }
+//    public static HttpURLConnection open_2 (OkUrlFactory factory,URL url)throws IOException
+//    {
+//        OkHttpClient client = factory.client();
+//        HttpURLConnection connection;
+//        if(LLMoFangProxyService.whetherSetProxy()) {
+//            try{
+//                client.setProxy(LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl));
+//                connection = new OkUrlFactory(client).open(url);
+//                if(connection.getResponseCode()==401)
+//                {
+//                    String responseData=LLMoFangUtil.ConvertToString(connection.getErrorStream());
+//                    try {
+//                        JSONObject jsonObject=new JSONObject(responseData);
+//                        int code=jsonObject.getInt("code");
+//                        LLMoFang.initializeService.acquireAppToken();
+//                        connection.disconnect();
+//                        throw new IOException();
+//                    } catch (JSONException e) {
+//                        return connection;
+//                    }
+//                }else {
+//                    return connection;
+//                }
+//            }
+//            catch (Exception e){
+//                if (e.getMessage().equals(HttpInstrumentation.PROXYERRORMSG)) {
+//                    LLMoFang.initializeService.acquireAppToken();
+//                }else {
+//                    LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+//                }
+//                throw new IOException();
+//            }
+//        }else {
+//            connection = new OkUrlFactory(client).open(url);
+//
+//        }
+//      return connection;
+//    }
 
 
     public static Call newCall(OkHttpClient client,Request request)
     {
         if(LLMoFangProxyService.whetherSetProxy()) {
             client.setProxy(LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl));
+            Headers headers=request.headers();
+            request.newBuilder().addHeader(HttpInstrumentation.REQESTTOKEN_HEADER, LLMoFang.requestToken).build();
             return  client.newCall(request);
 
         }else {

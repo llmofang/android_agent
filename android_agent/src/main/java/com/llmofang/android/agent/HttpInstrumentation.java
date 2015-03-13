@@ -33,14 +33,13 @@ import javax.net.ssl.HttpsURLConnection;
     @ReplaceCallSite
     public static URLConnection openConnection(URL url) throws IOException {
         if(LLMoFangProxyService.whetherSetProxy()) {
-            Proxy proxy = null;
             if (url.getProtocol().equals("http")) {
-                proxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
+                Proxy proxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection(proxy);
                 connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 return  connection;
             } else if (url.getProtocol().equals("https")) {
-                proxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
+                Proxy proxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
                 HttpsURLConnection connection = (HttpsURLConnection) url.openConnection(proxy);
                 connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 return  connection;
@@ -53,6 +52,34 @@ import javax.net.ssl.HttpsURLConnection;
         }
 
     }
+
+
+      @ReplaceCallSite
+      public static URLConnection openConnectionWithProxy(URL url,Proxy proxy) throws IOException {
+
+          if(LLMoFangProxyService.whetherSetProxy()) {
+              if (url.getProtocol().equals("http")) {
+                  Proxy llmofangProxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
+                  HttpURLConnection connection = (HttpURLConnection) url.openConnection(llmofangProxy);
+                  connection.setRequestProperty("X-LLMoFang-OrginalProxy", proxy.toString());
+                  connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
+                  return  connection;
+              } else if (url.getProtocol().equals("https")) {
+                  Proxy llmofangProxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
+                  HttpsURLConnection connection = (HttpsURLConnection) url.openConnection(llmofangProxy);
+                  connection.setRequestProperty("X-LLMoFang-OrginalProxy", proxy.toString());
+                  connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
+                  return  connection;
+              } else {
+                  return url.openConnection();
+              }
+          }else {
+              return url.openConnection();
+          }
+
+
+
+      }
       @ReplaceCallSite
       public static void connect(HttpsURLConnection connection) throws IOException {
           try {
@@ -72,7 +99,7 @@ import javax.net.ssl.HttpsURLConnection;
                   if (e.getMessage().equals(PROXYERRORMSG)) {
                       LLMoFang.initializeService.acquireAppToken();
                   } else {
-                      LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+                     proxyErrorHandler();
                   }
                   throw new IOException();
               }
@@ -81,12 +108,23 @@ import javax.net.ssl.HttpsURLConnection;
       @ReplaceCallSite
       public static void connect(HttpURLConnection connection) throws IOException {
           try {
-            connection.connect();
+              if (connection.getResponseCode() == 401) {
+                  String responseData = LLMoFangUtil.ConvertToString(connection.getErrorStream());
+                  try {
+                      JSONObject jsonObject = new JSONObject(responseData);
+                      int code = jsonObject.getInt("code");
+                      LLMoFang.initializeService.acquireAppToken();
+                      connection.disconnect();
+                      throw new IOException();
+                  } catch (JSONException e) {
+                  }
+              }
+
           }catch (IOException e) {
               if (e.getMessage() .equals(PROXYERRORMSG)) {
                   LLMoFang.initializeService.acquireAppToken();
               }else {
-                  LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+                  proxyErrorHandler();
               }
               throw new IOException();
           }
@@ -106,67 +144,7 @@ import javax.net.ssl.HttpsURLConnection;
         }
     }
 
-    @ReplaceCallSite
-    public static URLConnection openConnectionWithProxy(URL url,Proxy proxy) throws IOException {
 
-        if(LLMoFangProxyService.whetherSetProxy()) {
-            Proxy newproxy = null;
-
-            if (url.getProtocol().equals("http")) {
-                newproxy = LLMoFangProxyService.getProxy(LLMoFang.httpProxyUrl);
-                try {
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection(proxy);
-                    connection.setRequestProperty("X-LLMoFang-OrginalProxy", proxy.toString());
-                    connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
-                    connection.connect();
-                    if(connection.getResponseCode()==401)
-                    {
-                        String responseData=LLMoFangUtil.ConvertToString(connection.getErrorStream());
-                        try {
-                            JSONObject jsonObject=new JSONObject(responseData);
-                            int code=jsonObject.getInt("code");
-                            LLMoFang.initializeService.acquireAppToken();
-                            connection.disconnect();
-                            throw new IOException();
-                        } catch (JSONException e) {
-                            return connection;
-                        }
-                    }else {
-                        return connection;
-                    }
-                } catch (IOException e) {
-                    if (e.getMessage().equals(PROXYERRORMSG)) {
-                        LLMoFang.initializeService.acquireAppToken();
-                    }else {
-                        LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
-                    }
-                    throw new IOException();
-                }
-
-            } else if (url.getProtocol().equals("https")) {
-                try {
-                    newproxy = LLMoFangProxyService.getProxy(LLMoFang.httpsProxyUrl);
-                    HttpsURLConnection connection = (HttpsURLConnection) url.openConnection(proxy);
-                    connection.setRequestProperty("X-LLMoFang-OrginalProxy", proxy.toString());
-                    connection.setRequestProperty(REQESTTOKEN_HEADER, LLMoFang.requestToken);
-                    connection.connect();
-                     return connection;
-                } catch (IOException e) {
-                    if (e.getMessage().equals(PROXYERRORMSG)) {
-                        LLMoFang.initializeService.acquireAppToken();
-                    }else {
-                        LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
-                    }
-                    throw new IOException();
-                }
-
-            }else {
-                return url.openConnection();
-            }
-        }else {
-            return url.openConnection();
-        }
-    }
 
     @ReplaceCallSite
     public static HttpResponse execute(HttpClient httpClient, HttpHost target, HttpRequest request, HttpContext context) throws IOException
@@ -176,11 +154,12 @@ import javax.net.ssl.HttpsURLConnection;
             try{
                 setOriginProxy(target, request);
                 LLMoFangProxyService.httpclientSetProxy(httpClient);
+                request.addHeader(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 HttpResponse response=httpClient.execute(target,request,context);
                 return responseHandler(response);
             }catch (IOException e )
             {
-                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                proxyErrorHandler();
                 throw new IOException();
             }
         }else {
@@ -199,12 +178,13 @@ import javax.net.ssl.HttpsURLConnection;
             try{
             setOriginProxy(target, request);
             LLMoFangProxyService.httpclientSetProxy(httpClient);
+            request.addHeader(REQESTTOKEN_HEADER, LLMoFang.requestToken);
             HttpResponse response=httpClient.execute(target,request,context);
 
             return responseHandler.handleResponse(responseHandler(response));
         }catch (Exception e )
         {
-            LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+            proxyErrorHandler();
             throw new IOException();
         }
         }else{
@@ -219,12 +199,13 @@ import javax.net.ssl.HttpsURLConnection;
             try{
                 setOriginProxy(target, request);
                 LLMoFangProxyService.httpclientSetProxy(httpClient);
+                request.addHeader(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 HttpResponse response=httpClient.execute(target,request);
 
                 return responseHandler.handleResponse(responseHandler(response));
             }catch (Exception e )
             {
-                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                proxyErrorHandler();
                 throw new IOException();
             }
         }else{
@@ -241,12 +222,13 @@ import javax.net.ssl.HttpsURLConnection;
             try{
                 setOriginProxy(target, request);
                 LLMoFangProxyService.httpclientSetProxy(httpClient);
+                request.addHeader(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 HttpResponse response=httpClient.execute(target,request);
 
                 return responseHandler(response);
             }catch (Exception e )
             {
-                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                proxyErrorHandler();
                 throw new IOException();
             }
         }else{
@@ -263,12 +245,13 @@ import javax.net.ssl.HttpsURLConnection;
             try{
                 setOriginProxy(httpClient, request);
                 LLMoFangProxyService.httpclientSetProxy(httpClient);
+                request.addHeader(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 HttpResponse response=httpClient.execute(request,context);
 
                 return responseHandler(response);
             }catch (Exception e )
             {
-                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                proxyErrorHandler();
                 throw new IOException();
             }
         }else{
@@ -285,12 +268,13 @@ import javax.net.ssl.HttpsURLConnection;
             try{
                 setOriginProxy(httpClient, request);
                 LLMoFangProxyService.httpclientSetProxy(httpClient);
+                request.addHeader(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 HttpResponse response=httpClient.execute(request,context);
 
                 return responseHandler.handleResponse(responseHandler(response));
             }catch (Exception e )
             {
-                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                proxyErrorHandler();
                 throw new IOException();
             }
         }else{
@@ -308,12 +292,13 @@ import javax.net.ssl.HttpsURLConnection;
             try{
                 setOriginProxy(httpClient, request);
                 LLMoFangProxyService.httpclientSetProxy(httpClient);
+                request.addHeader(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 HttpResponse response=httpClient.execute(request);
 
                 return responseHandler.handleResponse(responseHandler(response));
             }catch (Exception e )
             {
-                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                proxyErrorHandler();
                 throw new IOException();
             }
         }else{
@@ -328,12 +313,13 @@ import javax.net.ssl.HttpsURLConnection;
             try{
                 setOriginProxy(httpClient, request);
                 LLMoFangProxyService.httpclientSetProxy(httpClient);
+                request.addHeader(REQESTTOKEN_HEADER, LLMoFang.requestToken);
                 HttpResponse response=httpClient.execute(request);
 
                 return responseHandler(response);
             }catch (Exception e )
             {
-                LLMoFang.errorRetry=LLMoFang.errorRetry-1;
+                proxyErrorHandler();
                 throw new IOException();
             }
         }else{
@@ -373,6 +359,12 @@ import javax.net.ssl.HttpsURLConnection;
           }else {
               return response;
           }
+      }
+
+      public static void proxyErrorHandler()
+      {
+          LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
+          LLMoFangUtil.showToast("流量魔方服务器出错请重新刷新");
       }
 
   }

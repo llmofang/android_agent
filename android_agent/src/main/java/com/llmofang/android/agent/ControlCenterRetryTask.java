@@ -28,7 +28,6 @@ public class ControlCenterRetryTask implements Runnable {
             }
         } catch (IOException e) {
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ControlCenterRetryTask(),LLMoFang.controlCenterRetrySchedule, TimeUnit.SECONDS);
-            e.printStackTrace();
         }
 
     }

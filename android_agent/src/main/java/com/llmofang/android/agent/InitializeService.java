@@ -33,7 +33,8 @@ public class InitializeService implements Runnable{
 
             acquireAppToken();
             acquireInitData();
-            LLMoFang.scheduledThreadPoolExecutor.scheduleAtFixedRate(new SyncFlowTask(),LLMoFang.syncFlowSchedule,LLMoFang.syncFlowSchedule, TimeUnit.SECONDS);
+           // LLMoFang.scheduledThreadPoolExecutor.scheduleAtFixedRate(new SyncFlowTask(),LLMoFang.syncFlowSchedule,LLMoFang.syncFlowSchedule, TimeUnit.SECONDS);
+           new SyncFlowTask().run();
             LLMoFangUtil.showToast("流量魔方初始化成功");
     }
 
@@ -122,6 +123,7 @@ public class InitializeService implements Runnable{
                 {
                     acquireAppToken();
                     acquireInitData();
+                    new SyncFlowTask().run();
                 }
                 Log.i("[llmofang]", response_body);
             }
