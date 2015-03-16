@@ -8,6 +8,9 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -35,23 +38,26 @@ public class InitializeService implements Runnable{
             acquireInitData();
            // LLMoFang.scheduledThreadPoolExecutor.scheduleAtFixedRate(new SyncFlowTask(),LLMoFang.syncFlowSchedule,LLMoFang.syncFlowSchedule, TimeUnit.SECONDS);
            new SyncFlowTask().run();
-            LLMoFangUtil.showToast("流量魔方初始化成功");
+            LLMoFangUtil.showToast("流量魔方初始化成功,可用流量为"+LLMoFang.flow+"b");
     }
 
     public  void acquireAppToken()  {
 
-        Request request = new Request.Builder().url(LLMoFang.CONTROLCENTERSERVER_APPTOKENURL)
-                .addHeader("Accept-Version", LLMoFang.INTERFACE_VERSION)
-                .addHeader("X-llmf-Application-Id", appId)
-                .addHeader("X-llmf-REST-API-Key",appKey).build();
+//        Request request = new Request.Builder().url(LLMoFang.CONTROLCENTERSERVER_APPTOKENURL)
+//                .addHeader("Accept-Version", LLMoFang.INTERFACE_VERSION)
+//                .addHeader("X-llmf-Application-Id", appId)
+//                .addHeader("X-llmf-REST-API-Key",appKey).build();
+        HttpGet get=new HttpGet(LLMoFang.CONTROLCENTERSERVER_APPTOKENURL);
+        get.setHeader("X-llmf-Application-Id", appId);
+        get.setHeader("X-llmf-REST-API-Key",appKey);
 
-        Response response = null;
+        HttpResponse response = null;
         try {
             client.setConnectTimeout(10,TimeUnit.SECONDS);
-            response = client.newCall(request).execute();
-            if(response.code()==200)
+            response = HttpUtil.request(get);
+            if(response.getStatusLine().getStatusCode()==200)
             {
-                String response_body = response.body().string();
+                String response_body = EntityUtils.toString(response.getEntity());
                 JSONObject result = new JSONObject(response_body);
                 LLMoFang.apptoken=result.get("app_token").toString();
                 LLMoFang.apptokenExpire=LLMoFangUtil.getExpireTime(result.get("expire").toString());
@@ -75,7 +81,7 @@ public class InitializeService implements Runnable{
 
     public  void acquireInitData()  {
 
-        Response response = null;
+        HttpResponse response = null;
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("phone_number", LLMoFang.getPhoneNumber())
@@ -85,12 +91,14 @@ public class InitializeService implements Runnable{
                     .put("sdk_version", LLMoFang.SDK_VERSION);
             String userInfoBase64 = Base64.encodeToString(jsonObject.toString().getBytes(), Base64.DEFAULT);
             userInfoBase64=userInfoBase64.replaceAll("\\\n","");
-            Request request = new Request.Builder().url(LLMoFang.CONTROLCENTERSERVER_INITURL + LLMoFang.apptoken)
-                    .addHeader("Accept-Version", LLMoFang.INTERFACE_VERSION)
-                    .addHeader("X-llmf-User-Info", userInfoBase64).build();
-            response = client.newCall(request).execute();
-            if (response.code() == 200) {
-                String response_body = response.body().string();
+//            Request request = new Request.Builder().url(LLMoFang.CONTROLCENTERSERVER_INITURL + LLMoFang.apptoken)
+//                    .addHeader("Accept-Version", LLMoFang.INTERFACE_VERSION)
+//                    .addHeader("X-llmf-User-Info", userInfoBase64).build();
+//            response = client.newCall(request).execute();
+            HttpGet get=new HttpGet(LLMoFang.CONTROLCENTERSERVER_INITURL + LLMoFang.apptoken);
+            get.setHeader("X-llmf-User-Info", userInfoBase64);
+            if (response.getStatusLine().getStatusCode() == 200) {
+                String response_body =EntityUtils.toString(response.getEntity());
                 JSONObject result = new JSONObject(response_body);
                 LLMoFang.requestToken=result.getString("request_token");
                 LLMoFang.requestTokenExpire=LLMoFangUtil.getExpireTime(result.getInt("expire"));
@@ -115,7 +123,7 @@ public class InitializeService implements Runnable{
                 Log.i("[llmofang]", response_body);
 
             }else {
-                String response_body = response.body().string();
+                String response_body = EntityUtils.toString(response.getEntity());
                 JSONObject result = new JSONObject(response_body);
                 int code=result.getInt("code");
                 //appToken过期

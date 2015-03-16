@@ -57,7 +57,7 @@ public class LLMoFang {
     public static final String CONTROLCENTERSERVER="http://10.1.1.100:4399";
     public static final String CONTROLCENTERSERVER_APPTOKENURL=CONTROLCENTERSERVER+"/app/token";
     public static final String CONTROLCENTERSERVER_INITURL=CONTROLCENTERSERVER+"/app/runtime/";
-    public static final String CONTROLCENTERSERVER_SYNCFLOW=CONTROLCENTERSERVER+"/flow/available";
+    public static final String CONTROLCENTERSERVER_SYNCFLOW=CONTROLCENTERSERVER+"/app/flow/available/";
     public static final String HEALTHCHECK=CONTROLCENTERSERVER+"/server/healthcheck/";
     public static  InitializeService initializeService;
 

@@ -33,7 +33,10 @@ public class LLMoFangProxyService {
         {
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ProxyRetryTask(),LLMoFang.errorInterval, TimeUnit.SECONDS);
             Log.d(LLMoFang.TAG,"proxy_error_retry_task running.............");
-            whetherSetProxy=false;
+            if(!LLMoFang.isProxySeverOK)
+            {
+                return false;
+            }
         }
         if (LLMoFang.connectivityAction!=-1)
         {
@@ -41,36 +44,36 @@ public class LLMoFangProxyService {
             {
                 if(LLMoFang.connectWifi==false)
                 {
-                    whetherSetProxy=false;
+                   return false;
                 }
             }
             if(LLMoFang.connectivityAction== ConnectivityManager.TYPE_MOBILE)
             {
                 if(LLMoFang.connectCellular ==false)
                 {
-                    whetherSetProxy=false;
+                    return false;
                 }
             }
         }else {
-            whetherSetProxy=false;
+            return false;
         }
         if(LLMoFang.connectivityAction== NetWorkListener.NONETWORK)
         {
-                whetherSetProxy=false;
+            return false;
         }
         if(!LLMoFang.isllmofangInitialized)
         {
-            whetherSetProxy=  false;
+            return false;
         }
 
-        if(LLMoFang.flow<LLMoFang.flow)
+        if(LLMoFang.flow<=0)
         {
-            whetherSetProxy=false;
+            return false;
         }
 
         if(!LLMoFang.isProxySeverOK)
         {
-            whetherSetProxy=false;
+            return false;
         }
         return whetherSetProxy;
     }

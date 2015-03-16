@@ -6,6 +6,10 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -19,18 +23,20 @@ import java.util.concurrent.TimeUnit;
 public class SyncFlowTask implements Runnable {
     @Override
     public void run() {
-        OkHttpClient client=new OkHttpClient();
-        Request request = new Request.Builder().url(LLMoFang.CONTROLCENTERSERVER_SYNCFLOW + LLMoFang.requestToken)
-              .addHeader("Accept-Version", LLMoFang.INTERFACE_VERSION).build();
+//        OkHttpClient client=new OkHttpClient();
+//        Request request = new Request.Builder().url(LLMoFang.CONTROLCENTERSERVER_SYNCFLOW + LLMoFang.requestToken)
+//              .addHeader("Accept-Version", LLMoFang.INTERFACE_VERSION).build();
+        HttpGet get=new HttpGet(LLMoFang.CONTROLCENTERSERVER_SYNCFLOW + LLMoFang.requestToken);
+
         try {
-            Response response = client.newCall(request).execute();
-            if(response.code()==200)
+            HttpResponse response =HttpUtil.request(get);
+            if(response.getStatusLine().getStatusCode()==200)
             {
-                String response_body = response.body().string();
+                String response_body = EntityUtils.toString(response.getEntity());
                 JSONObject result = new JSONObject(response_body);
-                LLMoFang.flow=result.getLong("flow");
+                LLMoFang.flow=result.getLong("available_flow");
             }else {
-                String response_body = response.body().string();
+                String response_body = EntityUtils.toString(response.getEntity());
                 JSONObject result = new JSONObject(response_body);
                 int code=result.getInt("code");
                 //requestToken过期
