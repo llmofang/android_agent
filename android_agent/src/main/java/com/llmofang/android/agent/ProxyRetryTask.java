@@ -1,9 +1,6 @@
 package com.llmofang.android.agent;
 
 
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -32,9 +29,10 @@ public class ProxyRetryTask implements Runnable {
                 try {
                     String response_body = EntityUtils.toString(response.getEntity());
                     JSONObject result = new JSONObject(response_body);
-                    if(result.getInt("status")==1)
+                    if(result.getInt("status")==0)
                     {
                         LLMoFang.isProxySeverOK=true;
+                        LLMoFang.errorRetry=LLMoFang.initialErrorRetry;
                     }else{
                         int interval=result.getInt("interval");
                         LLMoFang.scheduledThreadPoolExecutor.schedule(new ProxyRetryTask(),interval,TimeUnit.SECONDS);

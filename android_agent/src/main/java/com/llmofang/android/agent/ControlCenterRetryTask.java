@@ -1,9 +1,6 @@
 package com.llmofang.android.agent;
 
 
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -28,11 +25,13 @@ public class ControlCenterRetryTask implements Runnable {
             //如果是200则控制中心正常
             if(response.getStatusLine().getStatusCode() ==200||response.getStatusLine().getStatusCode() ==404)
             {
+                LLMoFang.isControlCenterOK=true;
                 new InitializeService(LLMoFang.getAppid(),LLMoFang.getAppkey()).run();
             }else{
                 LLMoFang.scheduledThreadPoolExecutor.schedule(new ControlCenterRetryTask(),LLMoFang.controlCenterRetrySchedule, TimeUnit.SECONDS);
             }
         } catch (IOException e) {
+            LLMoFang.isControlCenterOK=false;
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ControlCenterRetryTask(),LLMoFang.controlCenterRetrySchedule, TimeUnit.SECONDS);
         }
 

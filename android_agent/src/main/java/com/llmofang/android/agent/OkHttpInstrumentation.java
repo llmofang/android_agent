@@ -104,6 +104,7 @@ import java.net.URL;
                     LLMoFang.initializeService.acquireAppToken();
                     throw new IOException();
                 } catch (JSONException e) {
+                    LLMoFang.errorRetry = LLMoFang.errorRetry - 1;
                     return response;
                 }
             }else{
@@ -111,7 +112,7 @@ import java.net.URL;
             }
         }catch (Exception e)
         {
-            if (e.getMessage().equals(HttpInstrumentation.OKHTTPPROXYERRORMSG)) {
+            if (e.getMessage().equals(HttpInstrumentation.OKHTTPPROXYERRORMSG)||e.getMessage().equals(HttpInstrumentation.PROXYERRORMSG)){
                 LLMoFang.initializeService.acquireAppToken();
             }else {
                 LLMoFang.errorRetry = LLMoFang.errorRetry - 1;

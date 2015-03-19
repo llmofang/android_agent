@@ -43,27 +43,28 @@ public class LLMoFangUtil {
         return "";
     }
 
-    public static long getExpireTime(String expireSeconds)
+    public static Calendar getExpireTime(String expireSeconds)
     {
        return getExpireTime(Integer.parseInt(expireSeconds));
     }
 
 
-    public static long getExpireTime(int expireSeconds)
+    public static Calendar getExpireTime(int expireSeconds)
     {
         Calendar c=Calendar.getInstance();
         c.add(Calendar.SECOND, expireSeconds);
-        return c.getTime().getTime();
+        return c;
     }
 
-    public static boolean isExpire(Date expireTime)
+    public static boolean isExpire(Calendar expireTime)
     {
-        long time=expireTime.getTime()-new Date().getTime();
-        if(time>60){
-            return false;
-        }else{
-            return true;
-        }
+        Calendar now = Calendar.getInstance();
+       if(now.compareTo(expireTime)>=0)
+       {
+           return true;
+       }else {
+           return false;
+       }
     }
     public static String ConvertToString(InputStream is){
         ByteArrayOutputStream baos   =   new   ByteArrayOutputStream();

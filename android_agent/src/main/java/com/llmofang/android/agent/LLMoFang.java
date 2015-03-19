@@ -23,6 +23,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.util.Calendar;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class LLMoFang {
@@ -33,14 +34,15 @@ public class LLMoFang {
     private static String appkey;
     public static String apptoken;
     public static int connectivityAction=-1;
-    public static long apptokenExpire;
+    public static Calendar apptokenExpire;
     public static Context applicationContext;
     public static String requestToken;
-    public static long requestTokenExpire;
+    public static Calendar requestTokenExpire;
     public static ProxyURL httpProxyUrl;
     public static ProxyURL httpsProxyUrl;
     public static ProxyURL spdyProxyUrl;
     public static int errorRetry;
+    public static int initialErrorRetry;
     public static int errorInterval;
     public static boolean connectCellular;
     public static boolean connectWifi;
@@ -48,12 +50,14 @@ public class LLMoFang {
     public static long flow;
     public static long syncFlowSchedule=3000;
     public static int controlCenterRetrySchedule=600;
+    //public static int controlCenterRetrySchedule=10;
     public static boolean isllmofangInitialized=false;
     public static final String INTERFACE_VERSION="1.0.0";
     public static final String SDK_VERSION="1.0.0";
     public static final String TAG="[llmofang]";
     public static boolean isProxySeverOK=true;
-    public static ScheduledThreadPoolExecutor scheduledThreadPoolExecutor=new ScheduledThreadPoolExecutor(1);
+    public static boolean isControlCenterOK=true;
+    public static ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
     public static final String CONTROLCENTERSERVER="http://10.1.1.100:4399";
     public static final String CONTROLCENTERSERVER_APPTOKENURL=CONTROLCENTERSERVER+"/app/token";
     public static final String CONTROLCENTERSERVER_INITURL=CONTROLCENTERSERVER+"/app/runtime/";
@@ -69,7 +73,7 @@ public class LLMoFang {
 
 
     public static void initialize(Context context,String appID,String appKey)  {
-
+        scheduledThreadPoolExecutor=new ScheduledThreadPoolExecutor(1);
         TelephonyManager tm = (TelephonyManager)context.getSystemService(context.TELEPHONY_SERVICE);
         phoneNumber = tm.getLine1Number();
         imei = tm.getSimSerialNumber();
@@ -77,11 +81,7 @@ public class LLMoFang {
         imsi = tm.getSubscriberId();
         appid=appID;
         appkey=appKey;
-        ConnectivityManager connectMgr = (ConnectivityManager) context.getSystemService(context.CONNECTIVITY_SERVICE);
-        NetworkInfo info = connectMgr.getActiveNetworkInfo();
-        if(info!=null) {
-            connectivityAction = info.getType();
-        }
+        connectivityAction=NetWorkUtil.getNetworkType();
         Log.i(TAG,"phoneNumber:"+phoneNumber+"||imie:"+imei+"||imsi:"+imsi);
         if(imsi != null || imsi.length() > 0) {
              initializeService = new InitializeService(appid, appkey);

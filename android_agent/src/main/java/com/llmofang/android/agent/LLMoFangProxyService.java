@@ -29,14 +29,20 @@ public class LLMoFangProxyService {
 
     public static boolean whetherSetProxy()
     {
+
+        if(!LLMoFang.isControlCenterOK&&LLMoFangUtil.isExpire(LLMoFang.requestTokenExpire))
+        {
+            LLMoFang.initializeService.acquireInitData();
+        }
+
         if(LLMoFang.errorRetry<=0)
         {
             LLMoFang.scheduledThreadPoolExecutor.schedule(new ProxyRetryTask(),LLMoFang.errorInterval, TimeUnit.SECONDS);
+           // LLMoFang.scheduledThreadPoolExecutor.schedule(new ProxyRetryTask(),10, TimeUnit.SECONDS);
             Log.d(LLMoFang.TAG,"proxy_error_retry_task running.............");
-            if(!LLMoFang.isProxySeverOK)
-            {
+
                 return false;
-            }
+
         }
         if (LLMoFang.connectivityAction!=-1)
         {
@@ -57,7 +63,7 @@ public class LLMoFangProxyService {
         }else {
             return false;
         }
-        if(LLMoFang.connectivityAction== NetWorkListener.NONETWORK)
+        if(LLMoFang.connectivityAction==-1)
         {
             return false;
         }
@@ -83,4 +89,5 @@ public class LLMoFangProxyService {
         HttpHost proxy = new HttpHost(LLMoFang.httpProxyUrl.getAddress(), LLMoFang.httpProxyUrl.getPort());
         httpClient.getParams().setParameter(ConnRouteParams.DEFAULT_PROXY, proxy);
     }
+
 }
